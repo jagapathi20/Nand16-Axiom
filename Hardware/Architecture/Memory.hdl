@@ -1,0 +1,52 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/5/Memory.hdl
+/**
+ * The complete address space of the Hack computer's memory,
+ * including RAM and memory-mapped I/O. 
+ * The chip facilitates read and write operations, as follows:
+ *     Read:  out(t) = Memory[address(t)](t)
+ *     Write: if load(t-1) then Memory[address(t-1)](t) = in(t-1)
+ * In words: the chip always outputs the value stored at the memory 
+ * location specified by address. If load=1, the in value is loaded 
+ * into the memory location specified by address. This value becomes 
+ * available through the out output from the next time step onward.
+ * Address space rules:
+ * Only the upper 16K+8K+1 words of the Memory chip are used. 
+ * Access to address>0x6000 is invalid and reads 0. Access to any address
+ * in the range 0x4000-0x5FFF results in accessing the screen memory 
+ * map. Access to address 0x6000 results in accessing the keyboard 
+ * memory map. The behavior in these addresses is described in the Screen
+ * and Keyboard chip specifications given in the lectures and the book.
+ */
+CHIP Memory {
+    IN in[16], load, address[15];
+    OUT out[16];
+
+    PARTS:
+	//// Replace this comment with your code.
+    // 1. Route the master load bit to the correct device based on address[13..14]
+    // If address[14] == 0: it maps to RAM (outputs a or b)
+    // If address[14] == 1 and address[13] == 0: it maps to Screen (output c)
+    // If address[14] == 1 and address[13] == 1: it maps to Keyboard (output d)
+    DMux4Way(in=load , sel=address[13..14] , a=loadRam1 , b=loadRam2 , c=loadScreen , d=loadKbd );
+
+    // Combine the two RAM load pathways (since both mean address[14] == 0)
+    Or(a=loadRam1 , b=loadRam2 , out=loadRam );
+
+    // 2. The Physical Memory Hardware Chips
+    // RAM16K needs a 14-bit address space (2^14 = 16384) -> address[0..13]
+    RAM16K(in=in , load=loadRam , address=address[0..13] , out=ramOut );
+
+    // Screen needs a 13-bit address space (2^13 = 8192) -> address[0..12]
+    Screen(in=in , load=loadScreen , address=address[0..12] , out=screenOut );
+
+    // Keyboard is read-only and does not take an address or load pin
+    Keyboard(out=kbdOut );
+
+    // 3. Multiplex the individual outputs back into a single 16-bit out bus
+    // Selection maps identically to the DMux layout above:
+    // sel=00 -> RAM, sel=01 -> RAM, sel=10 -> Screen, sel=11 -> Keyboard
+    Mux4Way16(a=ramOut , b=ramOut , c=screenOut , d=kbdOut , sel=address[13..14] , out=out );
+}
