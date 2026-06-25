@@ -35,6 +35,18 @@ class Parser:
             return "C_PUSH"
         elif first_word == "pop":
             return "C_POP"
+        elif first_word == "label":
+            return "C_LABEL"
+        elif first_word == "goto":
+            return "C_GOTO"
+        elif first_word == "if-goto":
+            return "C_IF"
+        elif first_word == "function":
+            return "C_FUNCTION"
+        elif first_word == "call":
+            return "C_CALL"
+        elif first_word == "return":
+            return "C_RETURN"
         
         raise ValueError(f"Unknown command type encountered: {self.current_command}")
     
